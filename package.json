@@ -1,0 +1,11 @@
+{
+  "name": "slides-sheets-connect",
+  "version": "1.0.0",
+  "license": "MIT",
+  "scripts": {
+    "format": "prettier --write './*.gs'"
+  },
+  "devDependencies": {
+    "prettier": "^2.4.0"
+  }
+}
