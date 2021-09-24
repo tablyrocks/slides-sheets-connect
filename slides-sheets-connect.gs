@@ -1,32 +1,59 @@
-/**
- * Copyright (c) 2021 Tably Inc.
- * Released under the MIT license
- */
-
 const TOP_ROW = 1;
 const TOP_COLUMN = 1;
 
 const onOpen = () => {
   var ui = SpreadsheetApp.getUi();
-  ui.createMenu("Slides-Sheets Connect")
+  ui.createMenu("Slides ")
     .addItem("Copy from Slides", "copyFromSlideToSheet")
     .addItem("Write to Slides", "copySpeakerNotesFromSheetToSlide")
     .addToUi();
 };
 
-const promptToGetURL = () => {
-  let ui = SpreadsheetApp.getUi();
+const onSubmitForm = (form) => {
+  const url = form.slideUrl;
+  if (!url) {
+    return;
+  }
+  const mode = form.mode;
+  if (mode === "copyFromSlideToSheet") {
+    const importImages = form.importImages;
+    doCopyFromSlideToSheet(url, importImages === "yes");
+  } else if (mode === "copySpeakerNotesFromSheetToSlide") {
+    doCopySpeakerNotesFromSheetToSlide(url);
+  }
+};
 
-  let result = ui.prompt(
-    "Target Slides URL",
-    "Slide URL:",
-    ui.ButtonSet.OK_CANCEL
-  );
-
-  // Process the user's response.
-  let url = result.getResponseText();
-  // Logger.log(url); // DEBUG
-  return url;
+const promptToGetURL = (mode) => {
+  const importImages =
+    mode === "copyFromSlideToSheet"
+      ? `
+    <div style="display: flex; flex-direction: row; margin-bottom: 16px;">
+      <label>Import Images</label>
+      <input type="radio" name="importImages" id="importImagesYes" value="yes" />
+      <label for="importImagesYes">Yes</label>
+      <input type="radio" name="importImages" id="importImagesNo" value="no" checked />
+      <label for="importImagesNo">No</label>
+    </div>
+  `
+      : "";
+  const html = `
+    <form style="display: flex; flex-direction: column;" id="form">
+      <div style="display: flex; flex-direction: row; margin-bottom: 16px;">
+        <label for="slideUrl" style="margin-right: 8px;">Slide URL:</label>
+        <input type="text" id="slideUrl" name="slideUrl" />
+      </div>
+      ${importImages}
+      <div style="display: flex; flex-direction: row; justify-content: flex-end;">
+        <button type="button" onclick="google.script.run.onSubmitForm(document.querySelector('#form')); google.script.host.close();">OK</button>
+        <button type="button" onclick="google.script.host.close();" style="margin-left: 16px;">Cancel</button>
+      </div>
+      <input type="hidden" name="mode" value="${mode}" />
+    </form>
+  `;
+  const htmlOutput = HtmlService.createHtmlOutput(html)
+    .setWidth(300)
+    .setHeight(180);
+  SpreadsheetApp.getUi().showModalDialog(htmlOutput, "Target Slides URL");
 };
 
 const importFromSlide = (url) => {
@@ -132,12 +159,27 @@ const fetchSlideImagesAndPasteThemToSheet = (importFromSlideResult) => {
   }
 };
 
-const copyFromSlideToSheet = () => {
-  let url = promptToGetURL();
+const adjustRowHeight = (rowCount, importImages) => {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  if (importImages) {
+    sheet.setRowHeights(1, rowCount, 90);
+    sheet.setColumnWidth(4, 160);
+  } else {
+    sheet.autoResizeRows(1, rowCount);
+  }
+};
 
+const copyFromSlideToSheet = () => {
+  promptToGetURL("copyFromSlideToSheet");
+};
+
+const doCopyFromSlideToSheet = (url, importImages) => {
   let importFromSlideResult = importFromSlide(url);
   pasteSlideTitlesAndNotesToSheet(importFromSlideResult);
-  fetchSlideImagesAndPasteThemToSheet(importFromSlideResult);
+  if (importImages) {
+    fetchSlideImagesAndPasteThemToSheet(importFromSlideResult);
+  }
+  adjustRowHeight(importFromSlideResult.length, importImages);
 };
 
 const importFromSheet = () => {
@@ -205,7 +247,10 @@ const pasteSlideTitlesAndNotesToSlide = (url, importFromSlideResult) => {
 };
 
 const copySpeakerNotesFromSheetToSlide = () => {
-  let url = promptToGetURL();
+  promptToGetURL("copySpeakerNotesFromSheetToSlide");
+};
+
+const doCopySpeakerNotesFromSheetToSlide = (url) => {
   let importFromSlideResult = importFromSheet();
   pasteSlideTitlesAndNotesToSlide(url, importFromSlideResult);
 };
