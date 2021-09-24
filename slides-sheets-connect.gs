@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2021 Tably Inc.
+ * Released under the MIT license
+ */
+
 const TOP_ROW = 1;
 const TOP_COLUMN = 1;
 
