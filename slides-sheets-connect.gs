@@ -25,7 +25,12 @@ const onSubmitForm = (form) => {
     doCopyFromSlideToSheet(url, importImages === "yes");
   } else if (mode === "copySpeakerNotesFromSheetToSlide") {
     const includeTimeInfo = form.includeTimeInfo;
-    doCopySpeakerNotesFromSheetToSlide(url, includeTimeInfo === "yes");
+    const updateTitle = form.updateTitle;
+    doCopySpeakerNotesFromSheetToSlide(
+      url,
+      includeTimeInfo === "yes",
+      updateTitle === "yes"
+    );
   }
 };
 
@@ -48,6 +53,13 @@ const promptToGetURL = (mode) => {
       <label for="timeInfoYes">Yes</label>
       <input type="radio" name="includeTimeInfo" id="timeInfoNo" value="no" checked />
       <label for="timeInfoNo">No</label>
+    </div>
+    <div style="display: flex; flex-direction: row; margin-bottom: 16px;">
+      <label>Update Title</label>
+      <input type="radio" name="updateTitle" id="updateTitleYes" value="yes" />
+      <label for="updateTitleYes">Yes</label>
+      <input type="radio" name="updateTitle" id="updateTitleNo" value="no" checked />
+      <label for="updateTitleNo">No</label>
     </div>
   `;
   const html = `
@@ -245,7 +257,8 @@ const importFromSheet = () => {
 const pasteSlideTitlesAndNotesToSlide = (
   url,
   importFromSlideResult,
-  includeTimeInfo
+  includeTimeInfo,
+  updateTitle
 ) => {
   const preso = SlidesApp.openByUrl(url); // Get Slide by Opening URL
   const slides = preso.getSlides(); // Get all slides
@@ -273,10 +286,11 @@ const pasteSlideTitlesAndNotesToSlide = (
         noteTextRange.setText(importFromSlideResult[slideIndex].note);
       }
     }
-
-    const titleShape = findTitleShape(slide);
-    if (titleShape) {
-      titleShape.getText().setText(importFromSlideResult[slideIndex].title);
+    if (updateTitle) {
+      const titleShape = findTitleShape(slide);
+      if (titleShape) {
+        titleShape.getText().setText(importFromSlideResult[slideIndex].title);
+      }
     }
   });
 };
@@ -285,8 +299,17 @@ const copySpeakerNotesFromSheetToSlide = () => {
   promptToGetURL("copySpeakerNotesFromSheetToSlide");
 };
 
-const doCopySpeakerNotesFromSheetToSlide = (url, includeTimeInfo) => {
+const doCopySpeakerNotesFromSheetToSlide = (
+  url,
+  includeTimeInfo,
+  updateTitle
+) => {
   const importFromSlideResult = importFromSheet();
   console.log(importFromSlideResult);
-  pasteSlideTitlesAndNotesToSlide(url, importFromSlideResult, includeTimeInfo);
+  pasteSlideTitlesAndNotesToSlide(
+    url,
+    importFromSlideResult,
+    includeTimeInfo,
+    updateTitle
+  );
 };
